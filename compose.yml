@@ -35,9 +35,10 @@ services:
       COURSE_DATABASE_HOST: ${COURSE_DATABASE_HOST_DOCKER:-db}
     depends_on:
       - db
+      - pgadmin
 
 volumes:
   db:
-    driver: 'local'
+    driver: local
   pgadmin:
-    driver: 'local'
+    driver: local
