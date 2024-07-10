@@ -17,6 +17,7 @@ import (
 
 type store interface{
 	CreateTrip(ctx context.Context, pool *pgxpool.Pool, params spec.NewTripBody) (uuid.UUID, error)
+	GetTrip(ctx context.Context, id uuid.UUID) (pgstore.Trip, error)
 	GetParticipant(ctx context.Context, participantID uuid.UUID) (pgstore.Participant, error)
 	ConfirmParticipant(ctx context.Context, participantID uuid.UUID) error
 }
@@ -94,7 +95,27 @@ func (api *Api) PostTrips(w http.ResponseWriter, r *http.Request) *spec.Response
 // Get a trip details.
 // (GET /trips/{tripId})
 func (api *Api) GetTripsTripID(w http.ResponseWriter, r *http.Request, tripID string) *spec.Response {
-	panic("not implemented") // TODO: Implement
+	id, err := uuid.Parse(tripID)
+	if err != nil {
+		return spec.GetTripsTripIDJSON400Response(spec.Error{Message: "Invalid uuid"})
+	}
+
+	trip, err := api.store.GetTrip(r.Context(),id)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows){
+			return spec.GetTripsTripIDJSON400Response(spec.Error{Message: "Trip not found"})
+		}
+		api.logger.Error("Failed to get trip details", zap.Error(err), zap.String("trip_id",tripID))
+		return spec.GetTripsTripIDJSON400Response(spec.Error{Message: "Something went wrong, try again later"})
+	}
+	
+	tripDetails := spec.GetTripDetailsInner{
+		ID: trip.ID.String(), Destination: trip.Destination, 
+		StartsAt: trip.StartsAt.Time, EndsAt: trip.EndsAt.Time, 
+		IsConfirmed: trip.IsConfirmed,
+	}
+
+	return spec.GetTripsTripIDJSON200Response(spec.GetTripDetailsResponse{Trip: tripDetails})
 }
 
 // Update a trip.
