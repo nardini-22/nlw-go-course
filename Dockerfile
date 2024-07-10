@@ -10,7 +10,7 @@ COPY . .
 
 WORKDIR /course/cmd/course
 
-RUN go build -o /course/bin/course
+RUN go build -o /course/bin/course .
 
 EXPOSE 8080
-ENTRYPOINT [ "course/bin/course" ]
+ENTRYPOINT [ "/course/bin/course" ]

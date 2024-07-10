@@ -1,4 +1,15 @@
 services: 
+  mailpit:
+    image: axllent/mailpit:latest
+    restart: unless-stopped
+    volumes:
+      - mailpit:/data
+    ports:
+      - 1025:1025
+      - 8025:8025
+    environment:
+      MP_DATABASE: /data/mailpit.db
+
   db: 
     image: 'postgres:latest'
     restart: unless-stopped
@@ -35,9 +46,12 @@ services:
       COURSE_DATABASE_HOST: ${COURSE_DATABASE_HOST_DOCKER:-db}
     depends_on:
       - db
+      - pgadmin
 
 volumes:
   db:
-    driver: 'local'
+    driver: local
   pgadmin:
-    driver: 'local'
+    driver: local
+  mailpit:
+    driver: local

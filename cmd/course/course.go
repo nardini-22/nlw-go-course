@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"nlw-go-course/internal/api"
 	"nlw-go-course/internal/api/spec"
+	"nlw-go-course/internal/mailer/mailpit"
 	"os"
 	"os/signal"
 	"syscall"
@@ -54,7 +55,7 @@ func run(ctx context.Context) error {
 		return err
 	}
 
-	si := api.NewApi(pool, logger)
+	si := api.NewApi(pool, logger, mailpit.NewMailpit(pool))
 	r := chi.NewMux()
 	r.Use(middleware.RequestID, middleware.Recoverer, httputils.ChiLogger(logger))
 	r.Mount("/", spec.Handler(&si))

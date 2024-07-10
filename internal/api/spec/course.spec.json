@@ -249,7 +249,10 @@
         "properties": {
           "email": {
             "type": "string",
-            "format": "email"
+            "format": "email",
+            "x-go-extra-tags": {
+              "validate": "required,email"
+            }
           }
         },
         "required": [
@@ -262,10 +265,16 @@
         "properties": {
           "occurs_at": {
             "type": "string",
-            "format": "date-time"
+            "format": "date-time",
+            "x-go-extra-tags": {
+              "validate": "required"
+            }
           },
           "title": {
-            "type": "string"
+            "type": "string",
+            "x-go-extra-tags": {
+              "validate": "required"
+            }
           }
         },
         "required": [
@@ -278,11 +287,17 @@
         "type": "object",
         "properties": {
           "title": {
-            "type": "string"
+            "type": "string",
+            "x-go-extra-tags": {
+              "validate": "required"
+            }
           },
           "url": {
             "type": "string",
-            "format": "uri"
+            "format": "uri",
+            "x-go-extra-tags": {
+              "validate": "required,url"
+            }
           }
         },
         "required": [
@@ -296,29 +311,47 @@
         "properties": {
           "destination": {
             "type": "string",
-            "minLength": 4
+            "minLength": 4,
+            "x-go-extra-tags": {
+              "validate": "required,min=4"
+            }
           },
           "starts_at": {
             "type": "string",
-            "format": "date-time"
+            "format": "date-time",
+            "x-go-extra-tags": {
+              "validate": "required"
+            }
           },
           "ends_at": {
             "type": "string",
-            "format": "date-time"
+            "format": "date-time",
+            "x-go-extra-tags": {
+              "validate": "required"
+            }
           },
           "emails_to_invite": {
             "type": "array",
+            "x-go-extra-tags": {
+              "validate": "required,dive,email"
+            },
             "items": {
               "type": "string",
               "format": "email"
             }
           },
           "owner_name": {
-            "type": "string"
+            "type": "string",
+            "x-go-extra-tags": {
+              "validate": "required"
+            }
           },
           "owner_email": {
             "type": "string",
-            "format": "email"
+            "format": "email",
+            "x-go-extra-tags": {
+              "validate": "required,email"
+            }
           }
         },
         "required": [
@@ -336,15 +369,24 @@
         "properties": {
           "destination": {
             "type": "string",
-            "minLength": 4
+            "minLength": 4,
+            "x-go-extra-tags": {
+              "validate": "required,min=4"
+            }
           },
           "starts_at": {
             "type": "string",
-            "format": "date-time"
+            "format": "date-time",
+            "x-go-extra-tags": {
+              "validate": "required"
+            }
           },
           "ends_at": {
             "type": "string",
-            "format": "date-time"
+            "format": "date-time",
+            "x-go-extra-tags": {
+              "validate": "required"
+            }
           }
         },
         "required": [
