@@ -45,6 +45,21 @@ func (q *Queries) CreateActivity(ctx context.Context, arg CreateActivityParams) 
 	return id, err
 }
 
+const createParticipant = `-- name: CreateParticipant :exec
+INSERT INTO participants ("trip_id", "email")
+VALUES ($1, $2)
+`
+
+type CreateParticipantParams struct {
+	TripID uuid.UUID `db:"trip_id" json:"trip_id"`
+	Email  string    `db:"email" json:"email"`
+}
+
+func (q *Queries) CreateParticipant(ctx context.Context, arg CreateParticipantParams) error {
+	_, err := q.db.Exec(ctx, createParticipant, arg.TripID, arg.Email)
+	return err
+}
+
 const createTripLink = `-- name: CreateTripLink :one
 INSERT INTO links ("trip_id", "title", "url")
 VALUES ($1, $2, $3)
