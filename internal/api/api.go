@@ -22,6 +22,7 @@ type store interface{
 	GetParticipant(ctx context.Context, participantID uuid.UUID) (pgstore.Participant, error)
 	ConfirmParticipant(ctx context.Context, participantID uuid.UUID) error
 	CreateActivity(ctx context.Context, arg pgstore.CreateActivityParams) (uuid.UUID, error)
+	CreateTripLink(ctx context.Context, arg pgstore.CreateTripLinkParams) (uuid.UUID, error)
 }
 
 type mailer interface {
@@ -191,7 +192,34 @@ func (api *Api) PostTripsTripIDActivities(w http.ResponseWriter, r *http.Request
 // Confirm a trip and send e-mail invitations.
 // (GET /trips/{tripId}/confirm)
 func (api *Api) GetTripsTripIDConfirm(w http.ResponseWriter, r *http.Request, tripID string) *spec.Response {
-	panic("not implemented") // TODO: Implement
+	id, err := uuid.Parse(tripID)
+	if err != nil {
+		return spec.GetTripsTripIDConfirmJSON400Response(spec.Error{Message: "Invalid uuid"})
+	}
+
+	trip, err := api.store.GetTrip(r.Context(), id)
+	if err != nil {
+		return spec.GetTripsTripIDConfirmJSON400Response(spec.Error{Message: "Failed to get trip: " + err.Error()})
+	}
+
+	if trip.IsConfirmed {
+		return spec.GetTripsTripIDConfirmJSON400Response(spec.Error{Message: "Trip is already confirmed"})
+	}
+
+	confirmedTrip := pgstore.UpdateTripParams{
+		ID: trip.ID,
+		IsConfirmed: true,
+		Destination: trip.Destination,
+		StartsAt: trip.StartsAt,
+		EndsAt: trip.EndsAt,
+	}
+	
+	if err := api.store.UpdateTrip(r.Context(), confirmedTrip); err != nil {
+		api.logger.Error("Failed to confirm trip", zap.Error(err), zap.String("trip_id",tripID))
+		return spec.GetTripsTripIDConfirmJSON400Response(spec.Error{Message: "Something went wrong, try again later"})
+	}
+
+	return spec.GetTripsTripIDConfirmJSON204Response(nil)
 }
 
 // Invite someone to the trip.
@@ -209,7 +237,33 @@ func (api *Api) GetTripsTripIDLinks(w http.ResponseWriter, r *http.Request, trip
 // Create a trip link.
 // (POST /trips/{tripId}/links)
 func (api *Api) PostTripsTripIDLinks(w http.ResponseWriter, r *http.Request, tripID string) *spec.Response {
-	panic("not implemented") // TODO: Implement
+	id, err := uuid.Parse(tripID)
+	if err != nil {
+		return spec.PostTripsTripIDLinksJSON400Response(spec.Error{Message: "Invalid uuid"})
+	}
+
+	_, err = api.store.GetTrip(r.Context(), id)
+	if err != nil {
+		return spec.PostTripsTripIDLinksJSON400Response(spec.Error{Message: "Failed to get trip: " + err.Error()})
+	}
+
+	var body pgstore.CreateTripLinkParams
+	body.TripID = id
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		return spec.PostTripsTripIDLinksJSON400Response(spec.Error{Message: "Invalid JSON: " + err.Error()})
+	}
+
+	if err := api.validator.Struct(body); err != nil {
+		return spec.PostTripsTripIDLinksJSON400Response(spec.Error{Message: "Invalid input: " + err.Error()})
+	}
+
+
+	linkId, err := api.store.CreateTripLink(r.Context(), body); 
+	if err != nil {
+		return spec.PostTripsTripIDLinksJSON400Response(spec.Error{Message: "Failed to create link, try again later" + err.Error()})
+	}
+
+	return spec.PostTripsTripIDLinksJSON201Response(spec.CreatedTripLinks{LinkID: linkId.String()})
 }
 
 // Get a trip participants.
