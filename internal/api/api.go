@@ -8,6 +8,7 @@ import (
 	"nlw-go-course/internal/api/spec"
 	"nlw-go-course/internal/pgstore"
 
+	"github.com/discord-gophers/goapi-gen/types"
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -19,11 +20,14 @@ type store interface{
 	CreateTrip(ctx context.Context, pool *pgxpool.Pool, params spec.NewTripBody) (uuid.UUID, error)
 	GetTrip(ctx context.Context, id uuid.UUID) (pgstore.Trip, error)
 	UpdateTrip(ctx context.Context, arg pgstore.UpdateTripParams) error
+	GetParticipants(ctx context.Context, tripID uuid.UUID) ([]pgstore.Participant, error)
 	GetParticipant(ctx context.Context, participantID uuid.UUID) (pgstore.Participant, error)
 	CreateParticipant(ctx context.Context, arg pgstore.CreateParticipantParams) error
 	ConfirmParticipant(ctx context.Context, participantID uuid.UUID) error
 	CreateActivity(ctx context.Context, arg pgstore.CreateActivityParams) (uuid.UUID, error)
+	GetTripActivities(ctx context.Context, tripID uuid.UUID) ([]pgstore.Activity, error)
 	CreateTripLink(ctx context.Context, arg pgstore.CreateTripLinkParams) (uuid.UUID, error)
+	GetTripLinks(ctx context.Context, tripID uuid.UUID) ([]pgstore.Link, error)
 }
 
 type mailer interface {
@@ -258,7 +262,32 @@ func (api *Api) PostTripsTripIDInvites(w http.ResponseWriter, r *http.Request, t
 // Get a trip links.
 // (GET /trips/{tripId}/links)
 func (api *Api) GetTripsTripIDLinks(w http.ResponseWriter, r *http.Request, tripID string) *spec.Response {
-	panic("not implemented") // TODO: Implement
+	id, err := uuid.Parse(tripID)
+	if err != nil {
+		return spec.GetTripsTripIDLinksJSON400Response(spec.Error{Message: "Invalid uuid"})
+	}
+
+	_, err = api.store.GetTrip(r.Context(),id)
+	if err != nil {
+		return spec.GetTripsTripIDLinksJSON400Response(spec.Error{Message: "Failed to get trip: " + err.Error()})
+	}
+
+	tripLinks, err := api.store.GetTripLinks(r.Context(), id)
+	if err != nil {
+		return spec.GetTripsTripIDLinksJSON400Response(spec.Error{Message: "Failed to get trip links: " + err.Error()})
+	}
+
+	
+	links := make([]spec.GetTripLinksInner, len(tripLinks))
+	for i, eti := range tripLinks{
+		links[i] = spec.GetTripLinksInner{
+			 ID: eti.ID.String(),
+			 Title: eti.Title,
+			 URL: eti.Url,
+		}
+	}
+
+	return spec.GetTripsTripIDLinksJSON200Response(spec.GetTripLinksResponse{Links: links})
 }
 
 // Create a trip link.
@@ -296,5 +325,30 @@ func (api *Api) PostTripsTripIDLinks(w http.ResponseWriter, r *http.Request, tri
 // Get a trip participants.
 // (GET /trips/{tripId}/participants)
 func (api *Api) GetTripsTripIDParticipants(w http.ResponseWriter, r *http.Request, tripID string) *spec.Response {
-	panic("not implemented") // TODO: Implement
+	id, err := uuid.Parse(tripID)
+	if err != nil {
+		return spec.GetTripsTripIDParticipantsJSON400Response(spec.Error{Message: "Invalid uuid"})
+	}
+
+	_, err = api.store.GetTrip(r.Context(),id)
+	if err != nil {
+		return spec.GetTripsTripIDParticipantsJSON400Response(spec.Error{Message: "Failed to get trip: " + err.Error()})
+	}
+
+	tripParticipants, err := api.store.GetParticipants(r.Context(), id)
+	if err != nil {
+		return spec.GetTripsTripIDParticipantsJSON400Response(spec.Error{Message: "Failed to get trip participants: " + err.Error()})
+	}
+
+	participants := make([]spec.GetTripParticipantsInner, len(tripParticipants))
+	for i, eti := range tripParticipants{
+		participants[i] = spec.GetTripParticipantsInner{
+			 ID: eti.ID.String(),
+			 IsConfirmed: eti.IsConfirmed,
+			 Email: types.Email(eti.Email),
+			 Name: nil,
+		}
+	}
+
+	return spec.GetTripsTripIDParticipantsJSON200Response(spec.GetTripParticipantsResponse{Participants: participants})
 }
