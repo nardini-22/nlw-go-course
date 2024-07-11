@@ -49,6 +49,9 @@ WHERE trip_id = $1;
 -- name: InviteParticipantsToTrip :copyfrom
 INSERT INTO participants ("trip_id", "email")
 VALUES ($1, $2);
+-- name: CreateParticipant :exec
+INSERT INTO participants ("trip_id", "email")
+VALUES ($1, $2);
 -- name: CreateActivity :one
 INSERT INTO activities ("trip_id", "title", "occurs_at")
 VALUES ($1, $2, $3)
