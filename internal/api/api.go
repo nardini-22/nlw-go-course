@@ -159,7 +159,39 @@ func (api *Api) PutTripsTripID(w http.ResponseWriter, r *http.Request, tripID st
 // Get a trip activities.
 // (GET /trips/{tripId}/activities)
 func (api *Api) GetTripsTripIDActivities(w http.ResponseWriter, r *http.Request, tripID string) *spec.Response {
-	panic("not implemented") // TODO: Implement
+	id, err := uuid.Parse(tripID)
+	if err != nil {
+		return spec.GetTripsTripIDActivitiesJSON400Response(spec.Error{Message: "Invalid uuid"})
+	}
+
+	_, err = api.store.GetTrip(r.Context(),id)
+	if err != nil {
+		return spec.GetTripsTripIDActivitiesJSON400Response(spec.Error{Message: "Failed to get trip: " + err.Error()})
+	}
+
+	tripActivities, err := api.store.GetTripActivities(r.Context(), id)
+	if err != nil {
+		return spec.GetTripsTripIDActivitiesJSON400Response(spec.Error{Message: "Failed to get trip participants: " + err.Error()})
+	}
+
+	activitiesInner := make([]spec.GetTripActivitiesInner, len(tripActivities))
+	for i, eti := range tripActivities {
+		activitiesInner[i] = spec.GetTripActivitiesInner{
+			ID: eti.ID.String(),
+			OccursAt: eti.OccursAt.Time,
+			Title: eti.Title,
+		}
+	}
+
+	activities := make([]spec.GetTripActivitiesOuter, len(tripActivities))
+	for i, eti := range tripActivities{
+		activities[i] = spec.GetTripActivitiesOuter{
+			Date: eti.OccursAt.Time,
+			Activities: activitiesInner,
+		}
+	}
+
+	return spec.GetTripsTripIDActivitiesJSON200Response(spec.GetTripActivitiesResponse{Activities: activities})
 }
 
 // Create a trip activity.
